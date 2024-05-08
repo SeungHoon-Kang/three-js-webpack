@@ -113,41 +113,45 @@ if (WEBGL.isWebGLAvailable()) {
 
     render()
   }
+  let points = []; // 전역에 포인트 배열을 저장할 변수 선언
+  let lines = []; // 생성된 모든 선을 관리할 배열
 
   function onDocumentMouseDown(event) {
-    event.preventDefault()
+    event.preventDefault();
 
+    console.log('x, y', event.clientX, event.clientY);
+
+    // 레이캐스터로 화면 좌표를 3D 공간 좌표로 변환
     mouse.set(
       (event.clientX / window.innerWidth) * 2 - 1,
       -(event.clientY / window.innerHeight) * 2 + 1
-    )
-
-    raycaster.setFromCamera(mouse, camera)
-
-    var intersects = raycaster.intersectObjects(objects)
+    );
+    raycaster.setFromCamera(mouse, camera);
+    var intersects = raycaster.intersectObjects(objects);
 
     if (intersects.length > 0) {
-      var intersect = intersects[0]
+      var intersect = intersects[0];
+      var point = intersect.point; // 실제 3D 공간에서의 점
 
-      if (isShiftDown) {
-        if (intersect.object !== plane) {
-          scene.remove(intersect.object)
+      points.push(point.clone()); // 점을 배열에 추가
 
-          objects.splice(objects.indexOf(intersect.object), 1)
-        }
+      if (points.length >= 2) { // 최소 두 개의 포인트가 필요
+        const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+        const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
-      } else {
-        var voxel = new THREE.Mesh(cubeGeo, cubeMaterial)
-        voxel.position.copy(intersect.point).add(intersect.face.normal)
-        voxel.position.divideScalar(50).floor().multiplyScalar(50).addScalar(25)
-        scene.add(voxel)
+        const line = new THREE.Line(geometry, material); // 새로운 선 생성
+        scene.add(line); // 씬에 선 추가
+        lines.push(line); // 선 배열에 추가
 
-        objects.push(voxel)
+        // 마지막 점을 새로운 선의 시작점으로 재사용
+        points = [points[points.length - 1]];
       }
 
-      render()
+      render(); // 씬 렌더링 업데이트
     }
   }
+
+
 
   function onDocumentKeyDown(event) {
     switch (event.keyCode) {
